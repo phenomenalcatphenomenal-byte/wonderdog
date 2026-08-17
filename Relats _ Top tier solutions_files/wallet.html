@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+<title>Anchor — Non-Custodial EVM Wallet</title>
+<script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{
+  --bg:#0b0d10; --surface:#14171b; --card:#1c2026; --line:#252a31;
+  --ink:#eef1f4; --ink-dim:#8b939f; --up:#3ddc97; --down:#ff5d5d;
+  --warn:#f2b84b; --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:var(--sans);-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);color:var(--ink);min-height:100vh;}
+body{display:flex;justify-content:center;}
+::-webkit-scrollbar{width:0;background:transparent;}
+button{cursor:pointer;font:inherit;border:none;outline:none;}
+input,textarea,select{font:inherit;}
+
+#app{width:100%;max-width:480px;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);position:relative;}
+
+header{padding:20px 20px 10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.brand{font-size:20px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;}
+.brand .dot{width:8px;height:8px;border-radius:50%;background:var(--up);}
+.lock-btn{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:6px;}
+
+#appBody{display:none;flex-direction:column;flex:1;min-height:0;}
+#appBody.active{display:flex;}
+
+.screen{display:none;flex-direction:column;flex:1;padding:0 20px 20px;overflow-y:auto;}
+.screen.active{display:flex;}
+
+.onboard-screen{display:none;flex-direction:column;flex:1;padding:0 20px 30px;}
+.onboard-screen.active{display:flex;}
+
+.center-screen{justify-content:center;align-items:center;text-align:center;gap:18px;flex:1;padding:30px;}
+.center-screen h1{font-size:22px;font-weight:700;}
+.center-screen p{color:var(--ink-dim);font-size:13px;max-width:320px;line-height:1.5;}
+.btn{width:100%;padding:15px;border-radius:12px;font-size:15px;font-weight:650;background:var(--up);color:#000;transition:filter .15s;}
+.btn:hover{filter:brightness(1.08);}
+.btn:disabled{opacity:.5;}
+.btn-outline{background:transparent;border:1px solid var(--line);color:var(--ink);}
+.btn-danger{background:var(--down);color:#fff;}
+.btn-row{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px;}
+
+.field{width:100%;margin-bottom:12px;}
+.field label{display:block;font-size:11px;color:var(--ink-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;}
+.field input,.field textarea{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:12px 14px;color:var(--ink);font-family:var(--mono);font-size:13px;outline:none;}
+.field input:focus,.field textarea:focus{border-color:var(--up);}
+.field textarea{min-height:80px;resize:vertical;}
+.field .hint{font-size:11px;color:var(--ink-dim);margin-top:6px;line-height:1.4;}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;}
+.card-warn{border-color:#3a2c0d;background:#17140a;}
+.card-warn .head{color:var(--warn);font-weight:650;font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.card-warn p{font-size:12px;color:var(--ink-dim);line-height:1.5;}
+
+.mnemonic-box{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--card);border-radius:12px;padding:16px;margin:14px 0;}
+.mnemonic-word{font-family:var(--mono);font-size:13px;background:var(--surface);border-radius:8px;padding:8px 10px;display:flex;gap:8px;}
+.mnemonic-word .n{color:var(--ink-dim);}
+
+.checkbox-row{display:flex;align-items:flex-start;gap:10px;margin:14px 0;}
+.checkbox-row input{width:18px;height:18px;margin-top:2px;accent-color:var(--up);}
+.checkbox-row label{font-size:12px;color:var(--ink-dim);line-height:1.5;}
+
+.balance-card{background:linear-gradient(160deg,#151a17,#101312);border:1px solid var(--line);border-radius:20px;padding:22px;margin-bottom:16px;}
+.balance-card .label{font-size:12px;color:var(--ink-dim);margin-bottom:6px;}
+.balance-card .amount{font-size:34px;font-weight:700;font-family:var(--mono);letter-spacing:-.5px;}
+.balance-card .usd{font-size:13px;color:var(--ink-dim);margin-top:4px;}
+.addr-row{display:flex;align-items:center;gap:8px;margin-top:14px;background:var(--card);border-radius:10px;padding:10px 12px;}
+.addr-row span{font-family:var(--mono);font-size:12px;color:var(--ink-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.addr-row button{background:none;color:var(--ink-dim);font-size:14px;}
+
+.chain-tabs{display:flex;gap:8px;margin-bottom:16px;}
+.chain-tab{flex:1;text-align:center;padding:10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink-dim);}
+.chain-tab.active{color:var(--ink);border-color:var(--up);background:var(--card);}
+
+.action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.action-btn{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.action-btn i{font-size:18px;}
+.action-btn span{font-size:11px;font-weight:600;color:var(--ink-dim);}
+
+.section-title{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);margin:6px 0 10px;}
+.activity-empty{text-align:center;color:var(--ink-dim);font-size:12px;padding:30px 0;}
+
+.tx-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);}
+.tx-left{display:flex;align-items:center;gap:12px;min-width:0;}
+.tx-icon{width:34px;height:34px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--up);flex-shrink:0;}
+.tx-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.tx-info .to{font-size:13px;font-weight:600;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;}
+.tx-info .meta{font-size:11px;color:var(--ink-dim);}
+.tx-right{text-align:right;flex-shrink:0;}
+.tx-right .amt{font-size:13px;font-weight:600;font-family:var(--mono);}
+.tx-right a{font-size:10px;color:var(--ink-dim);}
+
+.settings-group{margin-bottom:20px;}
+.settings-group .group-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);margin-bottom:8px;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);
+  padding:14px 16px;gap:12px;cursor:pointer;}
+.settings-row:first-child{border-radius:12px 12px 0 0;}
+.settings-row:last-child{border-radius:0 0 12px 12px;border-top:none;}
+.settings-row:only-child{border-radius:12px;}
+.settings-row + .settings-row{border-top:1px solid var(--line);margin-top:-1px;}
+.settings-row .left{display:flex;align-items:center;gap:12px;}
+.settings-row .left i{width:18px;color:var(--ink-dim);font-size:14px;}
+.settings-row .label{font-size:14px;font-weight:500;}
+.settings-row .sub{font-size:11px;color:var(--ink-dim);margin-top:2px;}
+.settings-row .chev{color:var(--ink-dim);font-size:13px;}
+.settings-row.danger .label{color:var(--down);}
+.settings-row.danger .left i{color:var(--down);}
+
+.bottom-nav{height:76px;border-top:1px solid var(--line);background:var(--bg);display:grid;
+  grid-template-columns:repeat(3,1fr);align-items:center;justify-items:center;flex-shrink:0;
+  padding-bottom:env(safe-area-inset-bottom);}
+.nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  color:var(--ink-dim);font-size:18px;width:100%;height:100%;}
+.nav-btn.active{color:var(--ink);}
+.nav-btn span{font-size:10px;font-weight:600;}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;justify-content:center;align-items:center;padding:20px;}
+.modal-overlay.active{display:flex;}
+.modal-box{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px;position:relative;max-height:85vh;overflow-y:auto;}
+.modal-close{position:absolute;top:16px;right:18px;font-size:20px;color:var(--ink-dim);}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:16px;}
+.result-box{background:var(--card);border:1px solid var(--up);border-radius:10px;padding:12px;margin-top:12px;font-family:var(--mono);font-size:12px;word-break:break-all;display:none;}
+.result-box.show{display:block;}
+.status-msg{font-size:12px;margin-top:10px;display:none;}
+.status-msg.error{color:var(--down);}
+.status-msg.success{color:var(--up);}
+
+#toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1f1806; border: 1px solid #3a2c0d; border-radius: 12px; padding: 14px 20px; max-width: 90%; color: var(--warn); font-size: 12px; line-height: 1.5; box-shadow: 0 10px 30px rgba(0,0,0,0.9); opacity: 0; pointer-events: none; transition: all 0.3s ease; z-index: 999; text-align: center; word-break: break-word; }
+#toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="toast"></div>
+
+  <header>
+    <div class="brand"><span class="dot"></span>Anchor</div>
+    <button class="lock-btn" id="lockBtn" style="display:none;"><i class="fa-solid fa-lock"></i> Lock</button>
+  </header>
+
+  <!-- ================= ONBOARDING ================= -->
+  <div id="welcomeScreen" class="onboard-screen active center-screen">
+    <h1>Set up your wallet</h1>
+    <p>Keys are generated in your browser and never sent anywhere. You are fully responsible for backing up your seed phrase.</p>
+    <div class="btn-row">
+      <button class="btn" id="goCreateBtn">Create New Wallet</button>
+      <button class="btn btn-outline" id="goImportBtn">Import Existing Wallet</button>
+    </div>
+  </div>
+
+  <div id="createScreen" class="onboard-screen">
+    <h2 style="margin-bottom:4px;">Your recovery phrase</h2>
+    <p style="color:var(--ink-dim);font-size:12px;margin-bottom:6px;">Write these 12 words down in order and store them offline. Anyone with this phrase can take your funds.</p>
+    <div class="mnemonic-box" id="mnemonicBox"></div>
+    <div class="checkbox-row"><input type="checkbox" id="backedUpCheck"><label for="backedUpCheck">I've written down my recovery phrase and stored it somewhere safe and offline.</label></div>
+    <button class="btn" id="confirmBackupBtn" disabled>Continue</button>
+  </div>
+
+  <div id="passwordScreen" class="onboard-screen">
+    <h2 style="margin-bottom:4px;">Set a password</h2>
+    <p style="color:var(--ink-dim);font-size:12px;margin-bottom:16px;">This encrypts your key on this device. It is not sent anywhere and cannot be reset — if forgotten, you'll need your seed phrase to recover.</p>
+    <div class="field"><label>Password</label><input type="password" id="setPassword" placeholder="At least 8 characters"></div>
+    <div class="field"><label>Confirm password</label><input type="password" id="setPasswordConfirm" placeholder="Repeat password"></div>
+    <div class="status-msg error" id="passwordError"></div>
+    <button class="btn" id="encryptSaveBtn" style="margin-top:6px;">Encrypt & Finish Setup</button>
+  </div>
+
+  <div id="importScreen" class="onboard-screen">
+    <h2 style="margin-bottom:4px;">Import wallet</h2>
+    <p style="color:var(--ink-dim);font-size:12px;margin-bottom:16px;">Paste your 12 or 24 word seed phrase. This happens entirely in your browser.</p>
+    <div class="field"><label>Recovery phrase</label><textarea id="importMnemonicInput" placeholder="word1 word2 word3 ..."></textarea></div>
+    <div class="status-msg error" id="importError"></div>
+    <button class="btn" id="importContinueBtn">Continue</button>
+  </div>
+
+  <div id="unlockScreen" class="onboard-screen center-screen">
+    <h1><i class="fa-solid fa-lock" style="font-size:20px;margin-right:8px;"></i>Wallet locked</h1>
+    <div class="field" style="max-width:280px;"><input type="password" id="unlockPassword" placeholder="Enter password"></div>
+    <div class="status-msg error" id="unlockError" style="display:block;min-height:16px;"></div>
+    <div class="btn-row"><button class="btn" id="unlockBtn">Unlock</button><button class="btn btn-outline" id="forgotBtn" style="font-size:12px;">I lost my password — start over with seed phrase</button></div>
+  </div>
+
+  <!-- ================= MAIN APP ================= -->
+  <div id="appBody">
+    <div id="homeScreen" class="screen active">
+      <div class="chain-tabs">
+        <div class="chain-tab active" data-chain="eth">Ethereum</div>
+        <div class="chain-tab" data-chain="matic">Polygon</div>
+        <div class="chain-tab" data-chain="bsc">BNB Chain</div>
+      </div>
+      <div class="balance-card">
+        <div class="label">Balance</div>
+        <div class="amount" id="balanceAmount">Loading…</div>
+        <div class="usd" id="balanceUsd"></div>
+        <div class="addr-row"><span id="dashAddress"></span><button id="copyAddrBtn"><i class="fa-regular fa-copy"></i></button></div>
+      </div>
+      <div class="action-grid">
+        <div class="action-btn" id="sendActionBtn"><i class="fa-solid fa-arrow-up"></i><span>Send</span></div>
+        <div class="action-btn" id="receiveActionBtn"><i class="fa-solid fa-arrow-down"></i><span>Receive</span></div>
+        <div class="action-btn" id="swapActionBtn"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>Swap</span></div>
+      </div>
+      <div class="section-title">Recent activity</div>
+      <div id="homeActivityPreview"><div class="activity-empty">No transactions yet this session.</div></div>
+    </div>
+
+    <div id="activityScreen" class="screen">
+      <h2 style="margin:6px 0 16px;">Activity</h2>
+      <p style="color:var(--ink-dim);font-size:12px;margin-bottom:14px;">Local to this session only — nothing is stored on a server. Refreshing the page clears this list; view full history any time on a block explorer using your address.</p>
+      <div id="activityList"><div class="activity-empty">No transactions yet this session.</div></div>
+    </div>
+
+    <div id="settingsScreen" class="screen">
+      <h2 style="margin:6px 0 16px;">Settings</h2>
+      <div class="settings-group">
+        <div class="group-label">Wallet</div>
+        <div class="settings-row" id="settingsAddressRow"><div class="left"><i class="fa-solid fa-wallet"></i><div><div class="label">Address</div><div class="sub" id="settingsAddress"></div></div></div><i class="fa-regular fa-copy chev"></i></div>
+        <div class="settings-row" id="settingsBackupRow"><div class="left"><i class="fa-solid fa-key"></i><div class="label">Reveal recovery phrase</div></div><i class="fa-solid fa-chevron-right chev"></i></div>
+        <div class="settings-row" id="settingsChangePwRow"><div class="left"><i class="fa-solid fa-shield-halved"></i><div class="label">Change password</div></div><i class="fa-solid fa-chevron-right chev"></i></div>
+        <div class="settings-row" id="settingsExportRow"><div class="left"><i class="fa-solid fa-file-export"></i><div><div class="label">Export encrypted keystore</div><div class="sub">Still password-protected — safe to store as a backup file</div></div></div><i class="fa-solid fa-chevron-right chev"></i></div>
+      </div>
+      <div class="settings-group">
+        <div class="group-label">Security & risks</div>
+        <div class="settings-row" style="cursor:default;flex-direction:column;align-items:flex-start;gap:6px;">
+          <div class="left"><i class="fa-solid fa-triangle-exclamation" style="color:var(--warn);"></i><div><div class="label">Non-custodial wallet</div><div class="sub">Keys are encrypted and stored only locally on this device.</div></div></div>
+          <div style="font-size:11px;color:var(--ink-dim);line-height:1.5;padding-left:30px;">There is no account recovery — if you lose your password <b>and</b> your seed phrase backup, funds are unrecoverable. Browser tabs are less secure than hardware wallets or audited extensions; keep only what you're comfortable risking here.</div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="group-label">Network</div>
+        <div class="settings-row"><div class="left"><i class="fa-solid fa-server"></i><div><div class="label">RPC providers</div><div class="sub">Public nodes via publicnode.com</div></div></div></div>
+        <div class="settings-row"><div class="left"><i class="fa-solid fa-coins"></i><div><div class="label">Currency</div><div class="sub">USD</div></div></div></div>
+      </div>
+      <div class="settings-group">
+        <div class="group-label">About</div>
+        <div class="settings-row"><div class="left"><i class="fa-solid fa-circle-info"></i><div><div class="label">Anchor Wallet</div><div class="sub">Non-custodial · client-side only · v1.0</div></div></div></div>
+      </div>
+      <div class="settings-group">
+        <div class="group-label">Danger zone</div>
+        <div class="settings-row danger" id="settingsWipeRow"><div class="left"><i class="fa-solid fa-trash"></i><div><div class="label">Remove wallet from this device</div><div class="sub">Back up your seed phrase first — this cannot be undone</div></div></div></div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-btn active" data-tab="homeScreen"><i class="fa-solid fa-house"></i><span>Home</span></div>
+      <div class="nav-btn" data-tab="activityScreen"><i class="fa-solid fa-clock-rotate-left"></i><span>Activity</span></div>
+      <div class="nav-btn" data-tab="settingsScreen"><i class="fa-solid fa-gear"></i><span>Settings</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div id="sendModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-close" id="closeSendModal"><i class="fa-solid fa-xmark"></i></div>
+    <div class="modal-title">Send</div>
+    <div class="field"><label>Network</label><select id="sendChainSelect" style="width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--ink);"><option value="eth">Ethereum</option><option value="matic">Polygon</option><option value="bsc">BNB Chain</option></select></div>
+    <div class="field"><label>Recipient address</label><input type="text" id="sendTo" placeholder="0x..."></div>
+    <div class="field"><label>Amount</label><input type="text" id="sendAmount" placeholder="0.0"></div>
+    <div class="field" id="gasField" style="display:none;">
+      <label>Estimated network fee</label>
+      <div style="background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px;"><span id="gasAmount" style="font-family:var(--mono); font-size:13px; color:var(--ink-dim);">Calculating…</span></div>
+    </div>
+    <div class="field"><label>Password (to sign)</label><input type="password" id="sendPassword" placeholder="Your wallet password"></div>
+    <button class="btn" id="sendConfirmBtn">Sign & Send</button>
+    <div class="status-msg error" id="sendError"></div>
+    <div class="result-box" id="sendResult"></div>
+  </div>
+</div>
+
+<div id="receiveModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-close" id="closeReceiveModal"><i class="fa-solid fa-xmark"></i></div>
+    <div class="modal-title">Receive</div>
+    <p style="color:var(--ink-dim);font-size:12px;margin-bottom:10px;">This address works across Ethereum, Polygon, and BNB Chain. Only send assets from those networks.</p>
+    <div class="result-box show" id="receiveAddressBox"></div>
+    <button class="btn" id="copyReceiveBtn" style="margin-top:12px;">Copy Address</button>
+  </div>
+</div>
+
+<!-- SWAP MODAL (Transparent Fee Disclosure) -->
+<div id="swapModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-close" id="closeSwapModal"><i class="fa-solid fa-xmark"></i></div>
+    <div class="modal-title">Swap</div>
+    <p style="color:var(--ink-dim);font-size:11px;margin-bottom:10px;">Route via 0x API. A 0.3% fee is taken to support the wallet.</p>
+    
+    <div class="field"><label>From (Sell)</label>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <select id="swapFromSelect" style="flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--ink);">
+          <option value="BNB">BNB (Native)</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>To (Buy)</label>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <select id="swapToSelect" style="flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--ink);">
+          <option value="0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d">USDC</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Amount</label><input type="text" id="swapAmount" placeholder="0.0"></div>
+    
+    <div id="swapQuoteBox" style="display:none; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px;">
+      <label>Quote Details</label>
+      <div style="font-family:var(--mono); font-size:12px; color:var(--ink-dim); margin-top:6px;">
+        <div>Expected Output: <b id="swapOutput" style="color:var(--up);">0.00</b></div>
+        <div>Network Fee: <b id="swapTxFee">--</b> BNB</div>
+        <div>Anchor Fee (0.3%): <b id="swapDevFee" style="color:var(--warn);">--</b> BNB</div>
+      </div>
+    </div>
+
+    <button class="btn" id="swapConfirmBtn">Get Quote & Swap</button>
+    <div class="status-msg error" id="swapError"></div>
+    <div class="result-box" id="swapResult"></div>
+  </div>
+</div>
+
+<div id="backupModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-close" id="closeBackupModal"><i class="fa-solid fa-xmark"></i></div>
+    <div class="modal-title">Reveal recovery phrase</div>
+    <div class="card card-warn"><div class="head"><i class="fa-solid fa-triangle-exclamation"></i>Anyone who sees this can steal your funds</div><p>Make sure no one is looking at your screen. Never share this or type it into any website.</p></div>
+    <div class="field"><label>Password</label><input type="password" id="backupPassword" placeholder="Confirm your password"></div>
+    <button class="btn" id="revealBtn">Reveal Phrase</button>
+    <div class="status-msg error" id="backupError"></div>
+    <div class="mnemonic-box" id="backupMnemonicBox" style="display:none;"></div>
+  </div>
+</div>
+
+<div id="changePwModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-close" id="closeChangePwModal"><i class="fa-solid fa-xmark"></i></div>
+    <div class="modal-title">Change password</div>
+    <div class="field"><label>Current password</label><input type="password" id="cpCurrent" placeholder="Current password"></div>
+    <div class="field"><label>New password</label><input type="password" id="cpNew" placeholder="At least 8 characters"></div>
+    <div class="field"><label>Confirm new password</label><input type="password" id="cpConfirm" placeholder="Repeat new password"></div>
+    <button class="btn" id="cpSubmitBtn">Update Password</button>
+    <div class="status-msg error" id="cpError"></div>
+    <div class="status-msg success" id="cpSuccess">Password updated.</div>
+  </div>
+</div>
+
+<div id="exportModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-close" id="closeExportModal"><i class="fa-solid fa-xmark"></i></div>
+    <div class="modal-title">Export encrypted keystore</div>
+    <p style="color:var(--ink-dim);font-size:12px;margin-bottom:14px;">This downloads your keystore file. It's still encrypted with your password, so it's safe to store — but treat it like any sensitive backup, and don't upload it anywhere untrusted.</p>
+    <button class="btn" id="downloadKeystoreBtn">Download keystore.json</button>
+  </div>
+</div>
+
+<div id="wipeModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-close" id="closeWipeModal"><i class="fa-solid fa-xmark"></i></div>
+    <div class="modal-title">Remove wallet from this device</div>
+    <div class="card card-warn"><div class="head"><i class="fa-solid fa-triangle-exclamation"></i>This cannot be undone</div><p>Make sure you've backed up your recovery phrase. Without it, any funds at this address will be permanently inaccessible.</p></div>
+    <div class="field"><label>Type REMOVE to confirm</label><input type="text" id="wipeConfirmInput" placeholder="REMOVE"></div>
+    <button class="btn btn-danger" id="wipeConfirmBtn">Remove Wallet</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   ANCHOR WALLET — fully client-side, non-custodial
+   ========================================================= */
+
+const STORAGE_KEY = 'anchor_encrypted_keystore_v1';
+
+const RPC = {
+  eth:   { url:'https://ethereum-rpc.publicnode.com', symbol:'ETH',  coingeckoId:'ethereum', explorer:'https://etherscan.io/tx/' },
+  matic: { url:'https://polygon-bor-rpc.publicnode.com', symbol:'MATIC', coingeckoId:'matic-network', explorer:'https://polygonscan.com/tx/' },
+  bsc:   { url:'https://bsc-rpc.publicnode.com', symbol:'BNB', coingeckoId:'binancecoin', explorer:'https://bscscan.com/tx/' }
+};
+
+/* =========================================================
+   YOUR FEE CONFIGURATION (Swap Only)
+   ========================================================= */
+const OWNER_WALLET = "0x0eebedc3901b1802eadc2204f0978cf57aeeec01";
+const SWAP_FEE_BPS = 30; // 0.30% fee for the owner on swaps
+
+let currentChain = 'eth';
+let pendingMnemonic = null;
+let currentAddress = null;
+let sessionActivity = [];
+
+const $ = id => document.getElementById(id);
+function showOnboard(id){
+  document.querySelectorAll('.onboard-screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+function openModal(id){ $(id).classList.add('active'); }
+function closeModal(id){ $(id).classList.remove('active'); }
+
+function showToast(message, duration = 5000) {
+    const el = document.getElementById('toast');
+    el.innerHTML = message;
+    el.classList.add('show');
+    clearTimeout(el._timeout);
+    el._timeout = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  if(typeof ethers === 'undefined'){
+    document.getElementById('app').insertAdjacentHTML('afterbegin', `<div style="padding:20px;color:var(--down);font-size:13px;text-align:center;">Couldn't load the cryptography library (ethers.js). Check your internet connection or browser extensions blocking unpkg.com.</div>`);
+    document.querySelectorAll('.onboard-screen button, .nav-btn').forEach(b => b.disabled = true);
+    return;
+  }
+  if(localStorage.getItem(STORAGE_KEY)){
+    showOnboard('unlockScreen');
+    $('lockBtn').style.display = 'flex';
+  } else {
+    showOnboard('welcomeScreen');
+  }
+});
+
+$('goCreateBtn').addEventListener('click', () => {
+  const wallet = ethers.Wallet.createRandom();
+  pendingMnemonic = wallet.mnemonic.phrase;
+  renderMnemonic('mnemonicBox', pendingMnemonic);
+  $('confirmBackupBtn').disabled = true;
+  $('backedUpCheck').checked = false;
+  showOnboard('createScreen');
+});
+
+function renderMnemonic(boxId, phrase){
+  const container = $(boxId);
+  container.innerHTML = '';
+  phrase.split(' ').forEach((w, i) => {
+    const div = document.createElement('div');
+    div.className = 'mnemonic-word';
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = `${i+1}.`;
+    const s = document.createElement('span'); s.textContent = w;
+    div.appendChild(n); div.appendChild(s);
+    container.appendChild(div);
+  });
+}
+
+$('backedUpCheck').addEventListener('change', e => { $('confirmBackupBtn').disabled = !e.target.checked; });
+$('confirmBackupBtn').addEventListener('click', () => showOnboard('passwordScreen'));
+
+$('goImportBtn').addEventListener('click', () => {
+  $('importMnemonicInput').value = '';
+  $('importError').style.display = 'none';
+  showOnboard('importScreen');
+});
+
+$('importContinueBtn').addEventListener('click', () => {
+  const phrase = $('importMnemonicInput').value.trim().toLowerCase().replace(/\s+/g,' ');
+  const errEl = $('importError');
+  try{
+    ethers.Wallet.fromMnemonic(phrase);
+    pendingMnemonic = phrase;
+    errEl.style.display = 'none';
+    showOnboard('passwordScreen');
+  }catch(e){
+    errEl.textContent = 'That doesn\'t look like a valid recovery phrase. Check spelling and word count.';
+    errEl.style.display = 'block';
+  }
+});
+
+$('encryptSaveBtn').addEventListener('click', async () => {
+  const pw = $('setPassword').value;
+  const pw2 = $('setPasswordConfirm').value;
+  const errEl = $('passwordError');
+  const btn = $('encryptSaveBtn');
+
+  if(pw.length < 8){ errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display='block'; return; }
+  if(pw !== pw2){ errEl.textContent = 'Passwords do not match.'; errEl.style.display='block'; return; }
+  errEl.style.display = 'none';
+
+  btn.disabled = true; btn.textContent = 'Encrypting…';
+  try{
+    const wallet = ethers.Wallet.fromMnemonic(pendingMnemonic);
+    const json = await wallet.encrypt(pw);
+    localStorage.setItem(STORAGE_KEY, json);
+    currentAddress = wallet.address;
+    pendingMnemonic = null;
+    $('setPassword').value = ''; $('setPasswordConfirm').value = '';
+    $('lockBtn').style.display = 'flex';
+    enterApp();
+    showToast('⚠️ Non-custodial wallet active.<br>Never share your seed phrase or password.');
+  }catch(e){
+    errEl.textContent = 'Encryption failed: ' + (e.message || e);
+    errEl.style.display = 'block';
+    console.error(e);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Encrypt & Finish Setup';
+  }
+});
+
+$('unlockBtn').addEventListener('click', async () => {
+  const pw = $('unlockPassword').value;
+  const errEl = $('unlockError');
+  const btn = $('unlockBtn');
+  const json = localStorage.getItem(STORAGE_KEY);
+  if(!json){ errEl.textContent = 'No wallet found on this device.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Unlocking…';
+  try{
+    const wallet = await ethers.Wallet.fromEncryptedJson(json, pw);
+    currentAddress = wallet.address;
+    errEl.textContent = '';
+    $('unlockPassword').value = '';
+    enterApp();
+    showToast('⚠️ Wallet unlocked.<br>This runs entirely in your browser tab.');
+  }catch(e){
+    errEl.textContent = 'Incorrect password.';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Unlock';
+  }
+});
+
+$('forgotBtn').addEventListener('click', () => {
+  if(confirm('This will remove the encrypted wallet stored on this device. You will need your seed phrase to restore access. Continue?')){
+    localStorage.removeItem(STORAGE_KEY);
+    showOnboard('welcomeScreen');
+    $('lockBtn').style.display = 'none';
+  }
+});
+
+$('lockBtn').addEventListener('click', () => {
+  currentAddress = null;
+  $('unlockPassword').value = '';
+  $('unlockError').textContent = '';
+  $('appBody').classList.remove('active');
+  showOnboard('unlockScreen');
+});
+
+function enterApp(){
+  $('appBody').classList.add('active');
+  document.querySelectorAll('.onboard-screen').forEach(s=>s.classList.remove('active'));
+  switchTab('homeScreen');
+  $('dashAddress').textContent = short(currentAddress);
+  $('settingsAddress').textContent = short(currentAddress);
+  refreshBalance();
+}
+
+function short(addr){ return addr.slice(0,8) + '…' + addr.slice(-6); }
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+function switchTab(screenId){
+  document.querySelectorAll('#appBody .screen').forEach(s=>s.classList.remove('active'));
+  $(screenId).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.nav-btn[data-tab="${screenId}"]`).classList.add('active');
+}
+
+document.querySelectorAll('.chain-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.chain-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    currentChain = tab.dataset.chain;
+    refreshBalance();
+  });
+});
+
+async function refreshBalance(){
+  if(!currentAddress) return;
+  $('balanceAmount').textContent = 'Loading…';
+  $('balanceUsd').textContent = '';
+  try{
+    const conf = RPC[currentChain];
+    const provider = new ethers.providers.JsonRpcProvider(conf.url);
+    const wei = await provider.getBalance(currentAddress);
+    const native = parseFloat(ethers.utils.formatEther(wei));
+    $('balanceAmount').textContent = native.toFixed(5) + ' ' + conf.symbol;
+
+    try{
+      const priceRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${conf.coingeckoId}&vs_currencies=usd`);
+      const priceJson = await priceRes.json();
+      const usdPrice = priceJson[conf.coingeckoId]?.usd;
+      if(usdPrice) $('balanceUsd').textContent = '≈ $' + (native * usdPrice).toLocaleString(undefined,{maximumFractionDigits:2});
+    }catch(e){}
+  }catch(e){
+    $('balanceAmount').textContent = 'Unavailable';
+    $('balanceUsd').textContent = 'Could not reach network';
+  }
+}
+
+$('copyAddrBtn').addEventListener('click', () => copyText(currentAddress));
+$('settingsAddressRow').addEventListener('click', () => copyText(currentAddress));
+
+function copyText(text){
+  if(navigator.clipboard) navigator.clipboard.writeText(text);
+  else { const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+}
+
+/* =========================================================
+   SEND MODAL (Completely fee-free P2P)
+   ========================================================= */
+$('sendActionBtn').addEventListener('click', () => {
+  $('sendChainSelect').value = currentChain;
+  $('sendTo').value=''; $('sendAmount').value=''; $('sendPassword').value='';
+  $('gasField').style.display = 'none';
+  $('sendError').style.display='none'; $('sendResult').classList.remove('show');
+  openModal('sendModal');
+});
+$('closeSendModal').addEventListener('click', () => closeModal('sendModal'));
+
+$('sendConfirmBtn').addEventListener('click', async () => {
+  const chain = $('sendChainSelect').value;
+  const to = $('sendTo').value.trim();
+  const amount = $('sendAmount').value.trim();
+  const pw = $('sendPassword').value;
+  const errEl = $('sendError');
+  const btn = $('sendConfirmBtn');
+
+  errEl.style.display='none';
+  if(!ethers.utils.isAddress(to)){ errEl.textContent='Enter a valid recipient address.'; errEl.style.display='block'; return; }
+  if(!amount || isNaN(amount) || parseFloat(amount) <= 0){ errEl.textContent='Enter a valid amount.'; errEl.style.display='block'; return; }
+  if(!pw){ errEl.textContent='Enter your password to sign.'; errEl.style.display='block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Estimating gas…';
+  try{
+    const json = localStorage.getItem(STORAGE_KEY);
+    const wallet = await ethers.Wallet.fromEncryptedJson(json, pw);
+    const provider = new ethers.providers.JsonRpcProvider(RPC[chain].url);
+    const connected = wallet.connect(provider);
+
+    const txReq = { to, value: ethers.utils.parseEther(amount) };
+
+    const estimatedGas = await provider.estimateGas(txReq);
+    const gasPrice = await provider.getGasPrice();
+    const gasCostEth = ethers.utils.formatEther(estimatedGas.mul(gasPrice));
+
+    $('gasAmount').textContent = parseFloat(gasCostEth).toFixed(6) + ' ' + RPC[chain].symbol;
+    $('gasField').style.display = 'block';
+
+    btn.textContent = 'Sending…';
+    const txResponse = await connected.sendTransaction(txReq);
+
+    $('sendResult').textContent = 'Sent — tx hash: ' + txResponse.hash;
+    $('sendResult').classList.add('show');
+
+    sessionActivity.unshift({
+      hash: txResponse.hash, to, amount, symbol: RPC[chain].symbol,
+      chain, time: new Date()
+    });
+    renderActivity();
+    refreshBalance();
+  }catch(e){
+    errEl.textContent = e.message.includes('invalid password') || e.message.includes('MAC')
+      ? 'Incorrect password.'
+      : 'Transaction failed: ' + e.message;
+    errEl.style.display = 'block';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Sign & Send';
+  }
+});
+
+/* =========================================================
+   SWAP MODAL (0x API with explicit 0.3% Fee Disclosure)
+   ========================================================= */
+$('swapActionBtn').addEventListener('click', () => {
+  $('swapAmount').value = '';
+  $('swapQuoteBox').style.display = 'none';
+  $('swapError').style.display='none';
+  $('swapResult').classList.remove('show');
+  openModal('swapModal');
+});
+$('closeSwapModal').addEventListener('click', () => closeModal('swapModal'));
+
+$('swapConfirmBtn').addEventListener('click', async () => {
+  const fromToken = $('swapFromSelect').value; // "BNB"
+  const toToken = $('swapToSelect').value; // USDC address
+  const amount = $('swapAmount').value.trim();
+  const errEl = $('swapError');
+  const btn = $('swapConfirmBtn');
+
+  errEl.style.display='none';
+  if(!amount || isNaN(amount) || parseFloat(amount) <= 0){ errEl.textContent='Enter a valid amount.'; errEl.style.display='block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Fetching Quote…';
+  
+  try {
+    const json = localStorage.getItem(STORAGE_KEY);
+    const pw = prompt("Enter your wallet password to sign the swap:");
+    if(!pw) { btn.disabled=false; btn.textContent='Get Quote & Swap'; return; }
+    
+    const wallet = await ethers.Wallet.fromEncryptedJson(json, pw);
+    const provider = new ethers.providers.JsonRpcProvider(RPC.bsc.url);
+    const connected = wallet.connect(provider);
+
+    const sellAmountWei = ethers.utils.parseEther(amount).toString();
+    const zeroXApi = `https://api.0x.org/swap/v1/quote?chainId=56&sellToken=BNB&buyToken=${toToken}&sellAmount=${sellAmountWei}&feeRecipient=${OWNER_WALLET}&feeAmount=${SWAP_FEE_BPS}`;
+    
+    const response = await fetch(zeroXApi);
+    const quote = await response.json();
+
+    if (quote.code) {
+      throw new Error(quote.msg || quote.validationErrors?.[0]?.description || "0x API error");
+    }
+
+    // 2. Display Quote & Transparent Fees
+    document.getElementById('swapOutput').innerText = ethers.utils.formatUnits(quote.buyAmount, 18) + " USDC";
+    document.getElementById('swapTxFee').innerText = ethers.utils.formatEther(quote.gasPrice.mul(quote.gas).toString());
+    
+    // Display the 0.3% Dev Fee explicitly
+    const devFeeAmount = ethers.utils.formatUnits(quote.feeAmount, 18); 
+    document.getElementById('swapDevFee').innerText = devFeeAmount + " BNB";
+    document.getElementById('swapQuoteBox').style.display = 'block';
+
+    btn.textContent = 'Executing Swap…';
+    const tx = {
+      to: quote.to,
+      data: quote.data,
+      value: quote.value || "0", 
+      gasLimit: quote.gas
+    };
+
+    const txResponse = await connected.sendTransaction(tx);
+    
+    $('swapResult').textContent = 'Swap initiated — tx hash: ' + txResponse.hash;
+    $('swapResult').classList.add('show');
+    
+    sessionActivity.unshift({
+      hash: txResponse.hash, 
+      to: "0x Swap Aggregator", 
+      amount: `${amount} BNB → USDC`, 
+      symbol: "BNB",
+      chain: "bsc", 
+      time: new Date()
+    });
+    renderActivity();
+    refreshBalance();
+
+  } catch(e) {
+    console.error(e);
+    errEl.textContent = 'Swap failed: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Get Quote & Swap';
+  }
+});
+
+function renderActivity(){
+  const listHtml = sessionActivity.length === 0
+    ? '<div class="activity-empty">No transactions yet this session.</div>'
+    : sessionActivity.map(tx => `
+        <div class="tx-row">
+          <div class="tx-left">
+            <div class="tx-icon"><i class="fa-solid fa-arrow-up"></i></div>
+            <div class="tx-info">
+              <div class="to">${short(tx.to)}</div>
+              <div class="meta">${tx.time.toLocaleTimeString()} · ${RPC[tx.chain]?.symbol || 'BSC'} network</div>
+            </div>
+          </div>
+          <div class="tx-right">
+            <div class="amt">-${tx.amount} ${tx.symbol}</div>
+            <a href="${RPC[tx.chain]?.explorer || 'https://bscscan.com/tx/'}${tx.hash}" target="_blank" rel="noopener">View ↗</a>
+          </div>
+        </div>`).join('');
+  $('activityList').innerHTML = listHtml;
+  $('homeActivityPreview').innerHTML = listHtml;
+}
+
+$('receiveActionBtn').addEventListener('click', () => {
+  $('receiveAddressBox').textContent = currentAddress;
+  openModal('receiveModal');
+});
+$('closeReceiveModal').addEventListener('click', () => closeModal('receiveModal'));
+$('copyReceiveBtn').addEventListener('click', () => copyText(currentAddress));
+
+function openBackupFlow(){
+  $('backupPassword').value='';
+  $('backupError').style.display='none';
+  $('backupMnemonicBox').style.display='none';
+  openModal('backupModal');
+}
+$('backupActionBtn').addEventListener('click', openBackupFlow);
+$('settingsBackupRow').addEventListener('click', openBackupFlow);
+$('closeBackupModal').addEventListener('click', () => closeModal('backupModal'));
+
+$('revealBtn').addEventListener('click', async () => {
+  const pw = $('backupPassword').value;
+  const errEl = $('backupError');
+  try{
+    const json = localStorage.getItem(STORAGE_KEY);
+    const wallet = await ethers.Wallet.fromEncryptedJson(json, pw);
+    renderMnemonic('backupMnemonicBox', wallet.mnemonic.phrase);
+    $('backupMnemonicBox').style.display = 'grid';
+    errEl.style.display = 'none';
+  }catch(e){
+    errEl.textContent = 'Incorrect password.';
+    errEl.style.display = 'block';
+  }
+});
+
+$('settingsChangePwRow').addEventListener('click', () => {
+  $('cpCurrent').value=''; $('cpNew').value=''; $('cpConfirm').value='';
+  $('cpError').style.display='none'; $('cpSuccess').style.display='none';
+  openModal('changePwModal');
+});
+$('closeChangePwModal').addEventListener('click', () => closeModal('changePwModal'));
+
+$('cpSubmitBtn').addEventListener('click', async () => {
+  const cur = $('cpCurrent').value;
+  const next = $('cpNew').value;
+  const confirmPw = $('cpConfirm').value;
+  const errEl = $('cpError');
+  const btn = $('cpSubmitBtn');
+  errEl.style.display='none'; $('cpSuccess').style.display='none';
+
+  if(next.length < 8){ errEl.textContent='New password must be at least 8 characters.'; errEl.style.display='block'; return; }
+  if(next !== confirmPw){ errEl.textContent='New passwords do not match.'; errEl.style.display='block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Updating…';
+  try{
+    const json = localStorage.getItem(STORAGE_KEY);
+    const wallet = await ethers.Wallet.fromEncryptedJson(json, cur);
+    const newJson = await wallet.encrypt(next);
+    localStorage.setItem(STORAGE_KEY, newJson);
+    $('cpSuccess').style.display = 'block';
+    setTimeout(() => closeModal('changePwModal'), 1200);
+  }catch(e){
+    errEl.textContent = 'Current password is incorrect.';
+    errEl.style.display = 'block';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Update Password';
+  }
+});
+
+$('settingsExportRow').addEventListener('click', () => openModal('exportModal'));
+$('closeExportModal').addEventListener('click', () => closeModal('exportModal'));
+$('downloadKeystoreBtn').addEventListener('click', () => {
+  const json = localStorage.getItem(STORAGE_KEY);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'anchor-keystore.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+
+$('settingsWipeRow').addEventListener('click', () => {
+  $('wipeConfirmInput').value = '';
+  openModal('wipeModal');
+});
+$('closeWipeModal').addEventListener('click', () => closeModal('wipeModal'));
+$('wipeConfirmBtn').addEventListener('click', () => {
+  if($('wipeConfirmInput').value.trim() !== 'REMOVE'){
+    alert('Type REMOVE exactly to confirm.');
+    return;
+  }
+  localStorage.removeItem(STORAGE_KEY);
+  currentAddress = null;
+  sessionActivity = [];
+  closeModal('wipeModal');
+  $('appBody').classList.remove('active');
+  $('lockBtn').style.display = 'none';
+  showOnboard('welcomeScreen');
+});
+</script>
+</body>
+</html>

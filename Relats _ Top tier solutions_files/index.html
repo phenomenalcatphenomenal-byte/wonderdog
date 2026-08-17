@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+<title>Edify — Pro Wallet</title>
+<!-- Ethers.js for client-side cryptography -->
+<script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --bg: #0b0d10; --surface: #14171b; --card: #1c2026; --line: #252a31;
+  --ink: #eef1f4; --ink-dim: #8b939f; --up: #3ddc97; --down: #ff5d5d;
+  --accent: #f2b84b; --blue-gradient: linear-gradient(135deg, #0066ff, #0044cc);
+  --mono: 'JetBrains Mono','SFMono-Regular',Consolas,monospace;
+  --sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--sans); -webkit-tap-highlight-color: transparent; }
+html, body { background: var(--bg); color: var(--ink); height: 100%; display: flex; justify-content: center; align-items: center; }
+::-webkit-scrollbar { width: 0; background: transparent; }
+button { cursor: pointer; font: inherit; border: none; outline: none; background: none; color: inherit; }
+
+/* ==========================================
+   AUTH WRAPPER (Login/Signup - Now clearly Profile Sync)
+   ========================================== */
+#authWrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 999; transition: opacity 0.4s; }
+#authWrapper.hidden { opacity: 0; pointer-events: none; }
+.auth-box { width: 90%; max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 40px 30px; display: none; }
+.auth-box.active { display: block; animation: fadeSlideUp 0.4s ease; }
+.auth-brand { text-align: center; font-size: 32px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+.auth-subtitle { text-align: center; color: var(--ink-dim); font-size: 14px; margin-bottom: 30px; }
+.auth-box input { width: 100%; padding: 14px 16px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); color: white; font-size: 14px; outline: none; margin-bottom: 16px; font-family: var(--mono); }
+.auth-box input:focus { border-color: var(--up); }
+.btn-auth { width: 100%; padding: 16px; border: none; border-radius: 12px; background: var(--up); color: #000; font-size: 16px; font-weight: 650; cursor: pointer; transition: all 0.2s; }
+.btn-auth:hover { transform: scale(1.02); filter: brightness(1.1); }
+.auth-error { color: var(--down); font-size: 13px; text-align: center; margin-top: 10px; display: none; }
+.auth-success { color: var(--up); font-size: 13px; text-align: center; margin-top: 10px; display: none; }
+.auth-swap { text-align: center; margin-top: 20px; font-size: 13px; color: var(--ink-dim); }
+.auth-swap span { color: var(--up); cursor: pointer; font-weight: 600; }
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ==========================================
+   APP CONTAINER (Mobile-First)
+   ========================================== */
+#mainApp { width: 100%; max-width: 480px; height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; display: none; }
+#mainApp.active { display: flex; }
+
+/* --- TOP HEADER --- */
+header { padding: 20px 20px 14px; display: flex; flex-direction: column; gap: 14px; }
+.header-top { display: flex; justify-content: space-between; align-items: center; }
+.header-top .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--up); color: #000; display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; }
+.header-top .chain-select { background: var(--surface); border:1px solid var(--line); border-radius:12px; padding:8px 12px; color:white; font-size:13px; outline:none;}
+
+/* --- BALANCE & PNL --- */
+.balance-section { padding: 0 20px 16px; display: flex; justify-content: space-between; align-items: flex-start; }
+.balance-left h2 { font-size: 14px; font-weight: 500; color: var(--ink-dim); margin-bottom: 4px; }
+.balance-left .main-bal { font-size: 38px; font-weight: 700; letter-spacing: -0.5px; font-family: var(--mono); }
+.balance-left .pnl { font-size: 13px; font-weight: 500; color: var(--down); margin-top: 4px; }
+
+/* --- BANNER & WIDGETS --- */
+.banner-widget { margin: 0 20px 16px; background: var(--blue-gradient); border-radius: 20px; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; }
+.banner-text h3 { font-size: 16px; font-weight: 600; line-height: 1.2; }
+.banner-text p { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+.banner-img { width: 50px; height: 50px; background: white; border-radius: 12px; display: flex; justify-content: center; align-items: center; color: #0066ff; font-size: 24px; font-weight: bold; }
+.quick-widgets { display: flex; gap: 10px; padding: 0 20px 16px; overflow-x: auto; flex-shrink: 0; }
+.widget-card { background: var(--surface); border-radius: 16px; padding: 14px; min-width: 140px; display: flex; flex-direction: column; gap: 6px; }
+.widget-card .title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.widget-card .sub { font-size: 11px; color: var(--ink-dim); }
+.widget-card .change { font-weight: 650; font-size: 14px; color: var(--up); }
+
+/* ==========================================
+   HOME VIEW (Wallet & Portfolio)
+   ========================================== */
+#homeView { display: flex; flex-direction: column; flex: 1; overflow-y: auto; }
+#walletList { display: flex; flex-direction: column; padding: 0 20px 20px; gap: 4px; flex: 1; }
+
+/* ==========================================
+   MARKETS VIEW (Live Search & Price Tabs)
+   ========================================== */
+#marketsView { display: none; flex-direction: column; flex: 1; overflow-y: auto; }
+.search-tabs-row { display: flex; flex-direction: column; gap: 12px; padding: 0 20px 10px; padding-top: 20px; }
+.search-wrap { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 30px; padding: 0 16px; height: 44px; }
+.search-wrap input { flex: 1; background: transparent; border: none; outline: none; color: var(--ink); font-size: 14px; height: 100%; }
+.tabs { display: flex; width: 100%; overflow-x: auto; flex-shrink: 0; }
+.tabs .tab { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: var(--ink-dim); white-space: nowrap; padding: 0 10px 6px 10px; border-bottom: 2px solid transparent; }
+.tabs .tab.active { color: var(--ink); border-color: var(--up); }
+.list-head { display: flex; justify-content: space-between; padding: 0 20px 8px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-dim); }
+#tokenList { display: flex; flex-direction: column; padding: 0 20px 20px; gap: 4px; flex: 1; overflow-y: auto; }
+
+.token-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.token-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.token-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--card); flex-shrink: 0; display: flex; justify-content: center; align-items: center; font-size: 16px; }
+.token-icon img { width: 100%; height: 100%; border-radius: 50%; }
+.token-info { display: flex; flex-direction: column; gap: 2px; }
+.token-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.token-sym { font-size: 11px; color: var(--ink-dim); font-family: var(--mono); text-transform: uppercase; }
+.token-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.token-price { font-size: 13px; font-weight: 600; font-family: var(--mono); }
+.token-change { font-size: 11px; font-weight: 600; font-family: var(--mono); padding: 1px 6px; border-radius: 6px; background: rgba(61,220,151,.12); color: var(--up); }
+.token-change.negative { background: rgba(255,93,93,.12); color: var(--down); }
+.empty, .err { padding: 30px 0; text-align: center; color: var(--ink-dim); font-size: 13px; }
+
+/* ==========================================
+   WALLET VIEW (Full Screen Modal)
+   ========================================== */
+#walletView { display: none; flex-direction: column; padding: 20px; position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 80px); background: var(--bg); z-index: 10; overflow-y: auto; }
+#walletView.active { display: flex; }
+.wallet-back { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; margin-bottom: 20px; cursor: pointer; color: var(--ink); }
+.wallet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.grid-btn { background: var(--surface); padding: 10px 5px; border-radius: 14px; border: 1px solid var(--line); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; min-height: 110px; }
+.grid-btn:hover { border-color: var(--up); }
+.grid-btn i { font-size: 22px; color: var(--ink); }
+.grid-btn span { font-size: 11px; font-weight: 600; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+.hidden-form { display: none; flex-direction: column; gap: 10px; background: var(--surface); padding: 16px; border-radius: 16px; margin-top: 12px; border: 1px solid var(--line); }
+.hidden-form.active { display: flex; }
+.hidden-form input, .hidden-form textarea { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; color: white; width: 100%; font-size: 13px; outline: none; }
+.hidden-form textarea { min-height: 60px; }
+.hidden-form select { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; color: white; font-size: 13px; outline: none; width:100%; }
+.hidden-form button { background: var(--up); color: #000; border: none; border-radius: 10px; padding: 12px; font-weight: 650; font-size: 14px; width:100%; }
+.result-box { display: none; background: var(--card); padding: 12px; border-radius: 10px; margin-top: 10px; border: 1px solid var(--up); font-family: var(--mono); font-size: 12px; word-break: break-all; }
+.result-box.show { display: block; }
+
+/* ==========================================
+   MODALS
+   ========================================== */
+.modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: center; }
+.modal-overlay.active { display: flex; }
+.modal-box { width: 90%; max-width: 400px; background: var(--surface); border-radius: 24px; padding: 30px; border: 1px solid var(--line); position: relative; }
+.modal-close { position: absolute; top: 15px; right: 20px; font-size: 24px; color: var(--ink-dim); cursor: pointer; }
+.modal-title { font-size: 20px; font-weight: 650; margin-bottom: 20px; }
+.receive-addr { background: var(--bg); padding: 16px; border-radius: 12px; font-family: var(--mono); font-size: 13px; word-break: break-all; margin-bottom: 15px; }
+.copy-btn { background: var(--up); color: #000; border: none; border-radius: 10px; padding: 12px; width: 100%; font-weight: 600; }
+.swap-input-row { display: flex; gap: 10px; align-items: center; background: var(--bg); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 12px; }
+.swap-input-row input { flex: 1; background: transparent; border: none; color: white; font-size: 16px; outline: none; }
+.swap-input-row select { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: white; padding: 6px 10px; font-size: 13px; outline: none; }
+
+/* ==========================================
+   BOTTOM NAVIGATION
+   ========================================== */
+.bottom-nav { height: 80px; border-top: 1px solid var(--line); background: var(--bg); display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; justify-items: center; padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; margin-top: auto; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--ink-dim); font-size: 20px; transition: color 0.2s; width: 100%; height: 100%; }
+.nav-btn.active { color: var(--ink); }
+.nav-btn span { font-size: 10px; font-weight: 500; white-space: nowrap; }
+.nav-btn.center { width: 54px; height: 54px; background: var(--up); color: #000; border-radius: 50%; font-size: 20px; justify-content: center; box-shadow: 0 4px 15px rgba(61, 220, 151, 0.3); }
+</style>
+</head>
+<body>
+
+<!-- ================= AUTHENTICATION ================= -->
+<div id="authWrapper">
+    <div id="loginBox" class="auth-box active">
+        <div class="auth-brand">Edify Sync</div>
+        <p class="auth-subtitle">Sync your profile to track your public wallets</p>
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email Address" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <button type="submit" class="btn-auth" id="loginBtn">Sync Profile</button>
+            <div id="loginError" class="auth-error">Invalid email or password</div>
+        </form>
+        <div class="auth-swap">Don't have a profile? <span onclick="swapAuth('signup')">Create Profile</span></div>
+    </div>
+    
+    <div id="signupBox" class="auth-box">
+        <div class="auth-brand">Edify Sync</div>
+        <p class="auth-subtitle">Create a profile to sync your public wallets</p>
+        <form id="signupForm">
+            <input type="text" id="signupName" placeholder="Full Name" required>
+            <input type="email" id="signupEmail" placeholder="Email Address" required>
+            <input type="password" id="signupPassword" placeholder="Create Password (8+ chars)" required>
+            <input type="password" id="signupConfirm" placeholder="Confirm Password" required>
+            <button type="submit" class="btn-auth" id="signupBtn">Create Profile</button>
+            <div id="signupError" class="auth-error"></div>
+            <div id="signupSuccess" class="auth-success">Profile created! Redirecting...</div>
+        </form>
+        <div class="auth-swap">Already have a profile? <span onclick="swapAuth('login')">Sync Profile</span></div>
+    </div>
+</div>
+
+<!-- ================= MAIN APP ================= -->
+<div id="mainApp">
+    <header>
+        <div class="header-top">
+            <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
+        </div>
+        <div class="balance-section" style="padding:0;">
+            <div class="balance-left">
+                <h2>My Vault</h2>
+                <div class="main-bal" id="totalBalance">$0.00</div>
+                <div class="pnl" id="pnlDisplay">Current PnL $0.00</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- HOME VIEW -->
+    <div id="homeView">
+        <div class="banner-widget">
+            <div class="banner-text"><h3>Edify Wallet Pro</h3><p>100% Self-Custodial Encryption</p></div>
+            <div class="banner-img"><i class="fa-solid fa-cube"></i></div>
+        </div>
+        <div class="quick-widgets">
+            <div class="widget-card"><div class="title"><i class="fa-regular fa-circle-check"></i> Security</div><div class="sub">Client-side Crypto</div><div class="change" style="color:var(--ink);">100%</div></div>
+            <div class="widget-card"><div class="title"><i class="fa-regular fa-clock"></i> Transactions</div><div class="sub">Encrypted Signing</div><div class="change" style="color:var(--ink);">Live</div></div>
+        </div>
+        <div class="list-head"><span>Asset</span><span>Balance</span></div>
+        <div id="walletList"><div class="empty">No wallets found. Go to Wallet tab to add one.</div></div>
+    </div>
+
+    <!-- MARKETS VIEW -->
+    <div id="marketsView">
+        <div class="search-tabs-row">
+            <div class="search-wrap"><i class="fa-solid fa-magnifying-glass" style="color:var(--ink-dim);"></i><input id="searchInput" type="text" placeholder="Search token name or symbol"></div>
+            <div class="tabs">
+                <div class="tab active" data-cat="all">All</div>
+                <div class="tab" data-cat="gainers">Gainers</div>
+                <div class="tab" data-cat="losers">Losers</div>
+            </div>
+        </div>
+        <div class="list-head"><span>Token</span><span>Price / 24h</span></div>
+        <div id="tokenList"><div class="empty">Loading market data…</div></div>
+    </div>
+
+    <!-- WALLET VIEW -->
+    <div id="walletView">
+        <div class="wallet-back" onclick="closeWalletView()"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</div>
+        <h3 style="margin-bottom: 12px;">Manage Wallets</h3>
+        <div class="wallet-grid">
+            <div class="grid-btn" onclick="toggleForm('generate')"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Generate</span></div>
+            <div class="grid-btn" onclick="toggleForm('import')"><i class="fa-solid fa-cloud-arrow-down"></i><span>Import Seed</span></div>
+            <div class="grid-btn" onclick="toggleForm('send')"><i class="fa-solid fa-paper-plane"></i><span>Send</span></div>
+            <div class="grid-btn" onclick="toggleForm('track')"><i class="fa-solid fa-eye"></i><span>Track Public</span></div>
+        </div>
+
+        <div id="formGenerate" class="hidden-form">
+            <select id="genChain"><option value="ETH">Ethereum</option><option value="BTC">Bitcoin</option><option value="MATIC">Polygon</option></select>
+            <input type="password" id="genPassword" placeholder="Set a Master Password for this wallet">
+            <button onclick="generateWallet()">Generate & Encrypt</button>
+            <div id="genResult" class="result-box"><b>Address:</b> <span id="resAddress"></span></div>
+        </div>
+        <div id="formImport" class="hidden-form">
+            <textarea id="importMnemonic" placeholder="Enter 12/24 word seed phrase"></textarea>
+            <select id="importChain"><option value="ETH">Ethereum</option><option value="BTC">Bitcoin</option><option value="MATIC">Polygon</option></select>
+            <input type="password" id="importPassword" placeholder="Set a Master Password for this wallet">
+            <button onclick="importWallet()">Encrypt & Save</button>
+            <div id="impResult" class="result-box"><b>Address:</b> <span id="impAddress"></span></div>
+        </div>
+        <div id="formSend" class="hidden-form">
+            <select id="sendChain"><option value="ETH">Ethereum</option><option value="BTC">Bitcoin</option><option value="MATIC">Polygon</option></select>
+            <input id="sendTo" type="text" placeholder="Recipient Address">
+            <input id="sendAmount" type="number" step="any" placeholder="Amount">
+            <input type="password" id="sendPassword" placeholder="Enter your Master Password to Sign">
+            <button onclick="sendTransaction()">Sign & Send</button>
+            <div id="sendResult" class="result-box"><b>TxID:</b> <span id="resTxId"></span></div>
+        </div>
+        <div id="formTrack" class="hidden-form">
+            <div style="display:flex; gap:8px; align-items:center;">
+                <select id="trackChain" style="flex:1;"><option value="eth">ETH</option><option value="matic">MATIC</option><option value="bsc">BNB</option></select>
+                <input id="trackAddr" placeholder="0x... (public address)" style="flex:3;">
+                <button id="trackBtn" style="flex:1;">Add</button>
+            </div>
+            <div id="trackedList" style="margin-top:10px; font-family:var(--mono); font-size:12px; color:var(--ink-dim);"></div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <div class="bottom-nav">
+        <div class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-house"></i><span>Home</span></div>
+        <div class="nav-btn" onclick="switchTab('markets')"><i class="fa-regular fa-chart-bar"></i><span>Markets</span></div>
+        <div class="nav-btn center" onclick="openSwapModal()"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+        <div class="nav-btn" onclick="openReceiveModal()"><i class="fa-solid fa-arrow-down"></i><span>Receive</span></div>
+        <div class="nav-btn" onclick="openWalletView()"><i class="fa-solid fa-wallet"></i><span>Wallet</span></div>
+    </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div id="swapModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-close" onclick="closeSwapModal()"><i class="fa-solid fa-xmark"></i></div>
+        <div class="modal-title">Swap</div>
+        <div class="swap-input-row"><input type="text" placeholder="0.0"><select><option>ETH</option><option>MATIC</option><option>BNB</option></select></div>
+        <div style="text-align:center; margin:-6px 0; font-size:18px; color:var(--ink-dim);"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="swap-input-row"><input type="text" placeholder="0.0"><select><option>USDC</option><option>USDT</option><option>DAI</option></select></div>
+        <button class="btn-auth" style="margin-top:15px;">Connect DEX</button>
+    </div>
+</div>
+
+<div id="receiveModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-close" onclick="closeReceiveModal()"><i class="fa-solid fa-xmark"></i></div>
+        <div class="modal-title">Receive Assets</div>
+        <p style="color:var(--ink-dim); font-size:14px; margin-bottom:10px;">Send to this address:</p>
+        <div class="receive-addr" id="receiveAddress">0x0000... (Load a wallet first)</div>
+        <button class="copy-btn" onclick="copyAddress()"><i class="fa-regular fa-copy"></i> Copy Address</button>
+    </div>
+</div>
+
+<!-- =========================================================
+   SECURE CLIENT-SIDE JAVASCRIPT LOGIC
+   ========================================================= -->
+<script>
+const authWrapper = document.getElementById('authWrapper');
+const mainApp = document.getElementById('mainApp');
+const homeView = document.getElementById('homeView');
+const marketsView = document.getElementById('marketsView');
+
+const PUBLIC_RPC = { eth: 'https://ethereum-rpc.publicnode.com', matic: 'https://polygon-bor-rpc.publicnode.com', bsc: 'https://bsc-rpc.publicnode.com' };
+const CHAIN_MAP = { eth:'ETH', matic:'MATIC', bsc:'BNB' };
+
+// --- AUTH FLOW ---
+function swapAuth(type) {
+    document.getElementById('loginBox').classList.toggle('active', type === 'login');
+    document.getElementById('signupBox').classList.toggle('active', type === 'signup');
+}
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const errorDiv = document.getElementById('loginError');
+    btn.disabled = true; btn.innerText = 'Syncing...'; errorDiv.style.display = 'none';
+    try {
+        const res = await fetch('login.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: document.getElementById('loginEmail').value, password: document.getElementById('loginPassword').value }) });
+        const data = await res.json();
+        if(data.success) { authWrapper.classList.add('hidden'); mainApp.classList.add('active'); await loadMyWallets(); } 
+        else { errorDiv.innerText = data.error; errorDiv.style.display = 'block'; }
+    } catch(e) { errorDiv.innerText = 'Server error.'; errorDiv.style.display = 'block'; }
+    finally { btn.disabled = false; btn.innerText = 'Sync Profile'; }
+});
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('signupBtn'); const errorDiv = document.getElementById('signupError'); const successDiv = document.getElementById('signupSuccess');
+    const pass = document.getElementById('signupPassword').value; const confirm = document.getElementById('signupConfirm').value;
+    if(pass !== confirm) { errorDiv.innerText = "Passwords do not match."; errorDiv.style.display = 'block'; return; }
+    btn.disabled = true; btn.innerText = 'Creating...';
+    try {
+        const res = await fetch('signup.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: document.getElementById('signupName').value, email: document.getElementById('signupEmail').value, password: pass }) });
+        const data = await res.json();
+        if(data.success) { successDiv.innerText = data.message; successDiv.style.display = 'block'; setTimeout(() => { swapAuth('login'); }, 1500); } 
+        else { errorDiv.innerText = data.error; errorDiv.style.display = 'block'; }
+    } catch(e) { errorDiv.innerText = 'Server error.'; errorDiv.style.display = 'block'; }
+    finally { btn.disabled = false; btn.innerText = 'Create Profile'; }
+});
+
+// --- NAVIGATION ---
+function switchTab(tab) {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if(tab==='home') document.querySelector('.nav-btn:first-child').classList.add('active');
+    if(tab==='markets') document.querySelector('.nav-btn:nth-child(2)').classList.add('active');
+    homeView.style.display = (tab === 'home') ? 'flex' : 'none';
+    marketsView.style.display = (tab === 'markets') ? 'flex' : 'none';
+    document.getElementById('walletView').classList.remove('active');
+}
+function openWalletView() {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.nav-btn:last-child').classList.add('active');
+    homeView.style.display = 'none'; marketsView.style.display = 'none';
+    document.getElementById('walletView').classList.add('active');
+    document.querySelectorAll('.hidden-form').forEach(f => f.classList.remove('active'));
+}
+function closeWalletView() {
+    document.getElementById('walletView').classList.remove('active');
+    homeView.style.display = 'flex'; document.querySelector('.nav-btn:first-child').classList.add('active');
+}
+function toggleForm(type) {
+    const targetId = 'form' + type.charAt(0).toUpperCase() + type.slice(1);
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    if (target.classList.contains('active')) { target.classList.remove('active'); return; }
+    document.querySelectorAll('.hidden-form').forEach(f => f.classList.remove('active'));
+    target.classList.add('active');
+}
+
+// --- MARKET DATA ---
+let allCoins = [];
+const tokenListEl = document.getElementById('tokenList');
+async function loadMarket() {
+    try {
+        const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&price_change_percentage=24h&sparkline=false');
+        if(!res.ok) throw new Error('CoinGecko error');
+        const data = await res.json(); allCoins = data;
+        applyFilter(document.querySelector('#marketsView .tabs .tab.active').dataset.cat);
+    } catch(e) { console.warn('CoinGecko failed, using cached data.'); }
+}
+function renderTokens(coins) {
+    if(!coins || coins.length === 0) return tokenListEl.innerHTML = '<div class="empty">No tokens match.</div>';
+    tokenListEl.innerHTML = coins.map(c => {
+        const change = c.price_change_percentage_24h ?? 0; const neg = change < 0;
+        const price = c.current_price >= 1 ? '$'+c.current_price.toLocaleString(undefined,{maximumFractionDigits:2}) : '$'+c.current_price.toPrecision(4);
+        return `<div class="token-row" data-id="${c.id}"><div class="token-left"><div class="token-icon"><img src="${c.image}" alt="" style="width:100%;height:100%;border-radius:50%;"></div><div class="token-info"><div class="token-name">${c.name}</div><div class="token-sym">${c.symbol}</div></div></div><div class="token-right"><div class="token-price">${price}</div><div class="token-change ${neg?'negative':''}">${neg?'':'+'}${change.toFixed(2)}%</div></div></div>`;
+    }).join('');
+}
+function applyFilter(cat) {
+    let list = allCoins;
+    if(cat === 'gainers') list = [...allCoins].filter(c=>c.price_change_percentage_24h>0).sort((a,b)=>b.price_change_percentage_24h-a.price_change_percentage_24h);
+    if(cat === 'losers') list = [...allCoins].filter(c=>c.price_change_percentage_24h<0).sort((a,b)=>a.price_change_percentage_24h-b.price_change_percentage_24h);
+    renderTokens(list);
+}
+document.querySelectorAll('#marketsView .tabs .tab').forEach(tab => {
+    tab.addEventListener('click', ()=>{
+        document.querySelectorAll('#marketsView .tabs .tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active'); applyFilter(tab.dataset.cat);
+    });
+});
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    const activeCat = document.querySelector('#marketsView .tabs .tab.active').dataset.cat;
+    let base = allCoins;
+    renderTokens(q ? base.filter(c=> c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q)) : base);
+});
+
+// =========================================================================
+// SECURE WALLET CRYPTOGRAPHY (Decryption + LocalStorage)
+// =========================================================================
+let myWallets = [];
+const walletListEl = document.getElementById('walletList');
+
+// 1. LOAD PUBLIC WALLETS
+async function loadMyWallets() {
+    try {
+        const res = await fetch('api.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'get_user_wallets'}) });
+        const data = await res.json();
+        if(data.success && data.wallets) {
+            myWallets = data.wallets; renderPortfolio(myWallets);
+            if(myWallets.length > 0) window.myPrimaryAddress = myWallets[0].address;
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function renderPortfolio(wallets) {
+    if(!wallets || wallets.length === 0) { walletListEl.innerHTML = '<div class="empty">No wallets found.</div>'; return; }
+    let html = ''; const seen = {};
+    wallets.forEach(w => {
+        if(!seen[w.chain]) {
+            seen[w.chain] = true;
+            let icon = '🔷'; if(w.chain === 'BTC') icon = '₿'; if(w.chain === 'MATIC') icon = '🟣'; if(w.chain === 'BSC') icon = '🟡';
+            html += `<div class="token-row"><div class="token-left"><div class="token-icon">${icon}</div><div class="token-info"><div class="token-name">${CHAIN_MAP[w.chain.toLowerCase()] || w.chain}</div><div class="token-sym">${w.chain}</div></div></div><div class="token-right"><div class="token-price" id="bal_${w.chain}">Loading...</div><div class="token-change">Active</div></div></div>`;
+        }
+    });
+    walletListEl.innerHTML = html;
+    for(let w of wallets) {
+        try {
+            const provider = new ethers.providers.JsonRpcProvider(PUBLIC_RPC[w.chain.toLowerCase()]);
+            const balanceWei = await provider.getBalance(w.address);
+            const balanceEth = ethers.utils.formatEther(balanceWei);
+            const el = document.getElementById(`bal_${w.chain}`);
+            if(el) el.innerText = parseFloat(balanceEth).toFixed(4);
+        } catch(e) { console.warn("Failed to fetch balance for", w.chain); }
+    }
+}
+
+// 2. GENERATE WALLET (Encrypt and Save to LocalStorage)
+async function generateWallet() {
+    const chain = document.getElementById('genChain').value;
+    const password = document.getElementById('genPassword').value;
+    const btn = event.target; btn.disabled = true; btn.innerText = 'Encrypting...';
+    if(!password) { alert('Please set a Master Password.'); btn.disabled=false; return; }
+    try {
+        const wallet = ethers.Wallet.createRandom();
+        const json = await wallet.encrypt(password);
+        localStorage.setItem('edify_encrypted_wallet', json);
+
+        document.getElementById('resAddress').innerText = wallet.address;
+        document.getElementById('genResult').classList.add('show');
+
+        await fetch('api.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'save_public_address', chain: chain, address: wallet.address }) });
+        await loadMyWallets();
+    } catch(e) { alert('Error: ' + e.message); } 
+    finally { btn.disabled = false; btn.innerText = 'Generate & Encrypt'; }
+}
+
+// 3. IMPORT WALLET (Encrypt and Save to LocalStorage)
+async function importWallet() {
+    const chain = document.getElementById('importChain').value;
+    const mnemonic = document.getElementById('importMnemonic').value.trim();
+    const password = document.getElementById('importPassword').value;
+    const btn = event.target; btn.disabled = true; btn.innerText = 'Encrypting...';
+    if(!mnemonic) return alert('Please enter seed phrase.');
+    if(!password) { alert('Please set a Master Password.'); btn.disabled=false; return; }
+    try {
+        const wallet = ethers.Wallet.fromMnemonic(mnemonic);
+        const json = await wallet.encrypt(password);
+        localStorage.setItem('edify_encrypted_wallet', json);
+
+        document.getElementById('impAddress').innerText = wallet.address;
+        document.getElementById('impResult').classList.add('show');
+
+        await fetch('api.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'save_public_address', chain: chain, address: wallet.address }) });
+        await loadMyWallets();
+    } catch(e) { alert('Invalid seed phrase: ' + e.message); } 
+    finally { btn.disabled = false; btn.innerText = 'Encrypt & Save'; }
+}
+
+// 4. SEND TRANSACTION (Decrypt in memory, Sign, Broadcast)
+async function sendTransaction() {
+    const chain = document.getElementById('sendChain').value.toLowerCase();
+    const to = document.getElementById('sendTo').value.trim();
+    const amount = parseFloat(document.getElementById('sendAmount').value);
+    const password = document.getElementById('sendPassword').value.trim();
+    const btn = event.target; btn.disabled = true; btn.innerText = 'Signing...';
+    
+    if(!to || !amount || !password) { alert('Fill all fields'); btn.disabled = false; return; }
+    
+    try {
+        const encryptedJson = localStorage.getItem('edify_encrypted_wallet');
+        if(!encryptedJson) { throw new Error('No encrypted wallet found. Generate or Import one first.'); }
+
+        // Decrypt securely in memory using the Master Password
+        const wallet = await ethers.Wallet.fromEncryptedJson(encryptedJson, password);
+        const provider = new ethers.providers.JsonRpcProvider(PUBLIC_RPC[chain]);
+        const connectedWallet = wallet.connect(provider);
+
+        const tx = { to: to, value: ethers.utils.parseEther(amount.toString()) };
+        const txResponse = await connectedWallet.sendTransaction(tx);
+        
+        document.getElementById('resTxId').innerText = txResponse.hash;
+        document.getElementById('sendResult').classList.add('show');
+    } catch(e) { alert('Transaction failed (Incorrect Password or Network Error): ' + e.message); } 
+    finally { btn.disabled = false; btn.innerText = 'Sign & Send'; }
+}
+
+// --- MODALS & UI UTILITIES ---
+function openReceiveModal() {
+    const addrEl = document.getElementById('receiveAddress');
+    if(window.myPrimaryAddress) addrEl.innerText = window.myPrimaryAddress; else addrEl.innerText = "No wallet found.";
+    document.getElementById('receiveModal').classList.add('active');
+}
+function closeReceiveModal() { document.getElementById('receiveModal').classList.remove('active'); }
+function copyAddress() {
+    const text = document.getElementById('receiveAddress').innerText;
+    if(navigator.clipboard) { navigator.clipboard.writeText(text).then(()=>alert('Copied!')); } 
+    else { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('Copied!'); }
+}
+function openSwapModal() { document.getElementById('swapModal').classList.add('active'); }
+function closeSwapModal() { document.getElementById('swapModal').classList.remove('active'); }
+
+// --- INITIALIZATION ---
+loadMarket();
+setInterval(loadMarket, 10000); 
+</script>
+</body>
+</html>
