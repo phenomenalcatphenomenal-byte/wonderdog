@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- saved from url=(0027)https://toptier.relats.com/ -->
-<html id="html" lang="en" class="desktop windows chrome lenis lenis-smooth" style="--vh: 6.95px; --vhr: 6.952000122070313px; --vho: 8.16px; --vhd: 0.0020001220703127487px;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html id="html" lang="en" class="desktop windows chrome" style="--vh: 6.95px; --vhr: 6.952000122070313px; --vho: 8.16px; --vhd: 0.0020001220703127487px;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <script async="" src="https://www.clarity.ms/tag/rttl4emcsp"></script><script type="text/javascript">
     (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -11,7 +11,7 @@
 
     
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, minimal-ui, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2, minimal-ui, viewport-fit=cover">
     <meta name="google" content="notranslate">
     <base href=".">
 
@@ -100,27 +100,210 @@ gtag("config", "GT-WR97CW4C");
 <link rel="shortlink" href="https://toptier.relats.com/">
 <meta name="generator" content="Site Kit by Google 1.185.0">
 
+    <!-- ====== MOBILE‑FRIENDLY OVERRIDES ====== -->
     <style>
-    /* Keep the hero text overlay on top of the still image */
-    .component--hero .container {
-        position: relative;
-        z-index: 10;
+    /* Prevent horizontal overflow */
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100% !important;
     }
+    /* Ensure all content shows on mobile, even if JS fails */
+    [data-desktop] {
+        display: block !important;
+    }
+    /* Video containers must not overflow */
+    .video {
+        max-width: 100% !important;
+    }
+    .video video {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    /* Fix hero text size on small screens */
     .component--hero .title {
-        position: relative;
-        z-index: 11;
-        color: #fff;
-        text-shadow: 0 0 30px rgba(0,0,0,0.8);
+        font-size: clamp(2rem, 8vw, 4rem) !important;
+        text-align: center !important;
+        width: 90% !important;
     }
     .component--hero .container {
-        height: 100%;
-        width: 100%;
-        pointer-events: none;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
-    .component--hero .container .title {
-        pointer-events: auto;
+    /* Intro grid: make it a single column on mobile */
+    .component--intro .rows {
+        display: flex !important;
+        flex-direction: column !important;
+        height: auto !important;
+    }
+    .component--intro .row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        height: auto !important;
+        min-height: 200px !important;
+    }
+    .component--intro .video {
+        flex: 1 1 50% !important;
+        min-height: 150px !important;
+    }
+    /* Industries section: ensure images are visible */
+    .component--industries .video img {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: cover !important;
+    }
+    /* Truck section social links: make them scrollable and readable */
+    .component--truck .navigation {
+        max-height: 60vh !important;
+        overflow-y: auto !important;
+        padding: 10px !important;
+        font-size: 0.85rem !important;
+    }
+    .component--truck .navigation .title {
+        font-size: 0.85rem !important;
+        white-space: normal !important;
+    }
+    /* Animation section height fix */
+    .component--animation {
+        height: 100vh !important;
+        min-height: 400px !important;
+    }
+    .component--animation .sticky {
+        height: 100% !important;
+        position: relative !important;
+    }
+    .component--animation .title {
+        font-size: clamp(2rem, 6vw, 3.5rem) !important;
+    }
+    /* General text readability */
+    .wysiwyg {
+        font-size: 1rem !important;
+        line-height: 1.6 !important;
+    }
+    .title {
+        font-size: clamp(1.2rem, 5vw, 2.5rem) !important;
+    }
+    .title.--large {
+        font-size: clamp(1.5rem, 6vw, 3rem) !important;
+    }
+    .title.--xlarge {
+        font-size: clamp(1.8rem, 7vw, 3.5rem) !important;
+    }
+    .title.--jumbo {
+        font-size: clamp(2.2rem, 8vw, 4rem) !important;
+    }
+    /* Buttons on mobile */
+    .button {
+        font-size: 0.9rem !important;
+        padding: 0.6rem 1.5rem !important;
+    }
+    /* Footer on mobile */
+    #footer .columns {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        gap: 15px !important;
+    }
+    #footer .flex {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    /* Hide the Lenis smooth scroll on mobile if it causes issues */
+    .lenis.lenis-smooth {
+        scroll-behavior: auto !important;
+    }
+    /* Logo adjustment */
+    header .logo {
+        font-size: 1rem !important;
+    }
+    /* Sticky sections - avoid 100vh on mobile when content is long */
+    .component--intro .sticky {
+        height: auto !important;
+        position: relative !important;
+    }
+    /* Ensure the truck section background video doesn't overflow */
+    .component--truck .video {
+        position: relative !important;
+        height: 300px !important;
+        overflow: hidden !important;
+    }
+    .component--truck .video video {
+        height: 100% !important;
+        width: 100% !important;
+        object-fit: cover !important;
+    }
+    /* Tablet and small screen adjustments */
+    @media (max-width: 768px) {
+        .component--intro .video {
+            flex: 1 1 100% !important;
+            min-height: 200px !important;
+        }
+        .component--hero .scrolldown {
+            display: none !important;
+        }
+        /* Social links container */
+        .component--truck .navigation {
+            max-height: 50vh !important;
+        }
+        .container {
+            padding: 0 15px !important;
+            max-width: 100% !important;
+        }
+        /* Fix the about section numbers */
+        .component--about .center > div[style*="font-size: 5rem"] {
+            font-size: 3rem !important;
+        }
+        /* Tokenomics cards on mobile */
+        .component--about .center > div[style*="display: flex"] {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+        .component--about .center > div[style*="display: flex"] > div {
+            width: 80% !important;
+            min-width: unset !important;
+            text-align: center !important;
+        }
+        /* Tax and chain info */
+        .component--about .center > div[style*="max-width: 600px"] {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+        .component--about .center > div[style*="max-width: 600px"] > div {
+            border-right: none !important;
+            padding-right: 0 !important;
+        }
+    }
+    /* Very small phones */
+    @media (max-width: 480px) {
+        .component--hero .title {
+            font-size: 1.8rem !important;
+        }
+        .component--animation h2 {
+            font-size: 2rem !important;
+        }
+        .component--truck .navigation .title {
+            font-size: 0.75rem !important;
+        }
+        .component--truck .navigation .icon {
+            width: 20px !important;
+            height: 20px !important;
+        }
+        .component--truck .navigation .icon img {
+            width: 100% !important;
+            height: auto !important;
+        }
+        .component--intro .video {
+            min-height: 120px !important;
+        }
+        .component--periflex .box {
+            padding: 15px !important;
+        }
     }
     </style>
+
 </head>
 <body class="home wp-singular page-template page-template-template-flexible page-template-template-flexible-php page page-id-311 wp-theme-relats" id="scrollup" style="">
 
