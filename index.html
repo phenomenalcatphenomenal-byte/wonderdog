@@ -539,8 +539,8 @@ gtag("config", "GT-WR97CW4C");
                 <div class="center">
                     <div class="title split" style=""><div class="line line--1" style="display: block; text-align: center; position: relative;"><div style="position: relative; display: inline-block; translate: none; rotate: none; scale: none; transform: translate(0px, 105%) rotate(5deg);" class="word word--1">$WONDER</div></div></div>
                     
-                    <!-- TOTAL SUPPLY NUMBER - REMOVED "title --jumbo" CLASS TO BREAK JS COUNTER -->
-                    <div style="font-size: 5rem; font-weight: bold; color: #ffffff; margin: 10px 0;">1,000,000,000</div>
+                    <!-- TOTAL SUPPLY NUMBER - FIXED FOR MOBILE OVERFLOW -->
+                    <div style="font-size: clamp(2.5rem, 10vw, 5rem); font-weight: bold; color: #ffffff; margin: 10px 0; overflow-wrap: break-word; word-break: break-all; max-width: 100%; padding: 0 10px; box-sizing: border-box;">1,000,000,000</div>
                     
                     <div class="title split" style=""><div class="line line--1" style="display: block; text-align: center; position: relative;"><div style="position: relative; display: inline-block; translate: none; rotate: none; scale: none; transform: translate(0px, 105%) rotate(5deg);" class="word word--1">Total</div> <div style="position: relative; display: inline-block; translate: none; rotate: none; scale: none; transform: translate(0px, 105%) rotate(5deg);" class="word word--2">Supply</div></div></div>
                     
@@ -1100,82 +1100,121 @@ var wpcf7 = {
 <!--  EXTREME MOBILE RESPONSIVENESS – FORCES ALL SECTIONS VISIBLE   -->
 <!-- ============================================================== -->
 <style>
-    /* ----- FORCE ALL .desktop CONTAINERS TO SHOW ON MOBILE ----- */
     @media (max-width: 1100px) {
+        /* Force desktop containers to display */
         .desktop {
             display: block !important;
+            height: auto !important;
+            min-height: auto !important;
+            position: relative !important;
+            overflow: visible !important;
         }
-        /* Remove any inline styles that might hide content */
-        [style*="display: none"] {
+        
+        /* Fix Roadmap section (periflex) */
+        .component--periflex .sticky,
+        .component--periflex .end,
+        .component--periflex .container,
+        .component--periflex .boxes {
             display: block !important;
+            height: auto !important;
+            min-height: auto !important;
+            position: relative !important;
+            overflow: visible !important;
         }
-        /* Hero title size */
+        .component--periflex .sticky .video {
+            height: 250px !important;
+            width: 100% !important;
+            position: relative !important;
+        }
+        .component--periflex .boxes.--1 {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 15px !important;
+            margin-top: 0 !important;
+            height: auto !important; /* override inline 326px */
+        }
+        .component--periflex .boxes .box {
+            width: 100% !important;
+            margin-bottom: 0 !important;
+            padding: 20px !important;
+            border: 1px solid #333 !important;
+            border-radius: 12px !important;
+            background: #0a0a0a !important;
+        }
+        
+        /* Fix How-to-Buy section (other-industries) */
+        .component--other-industries .sticky,
+        .component--other-industries .slides {
+            display: block !important;
+            height: auto !important;
+            min-height: auto !important;
+            position: relative !important;
+        }
+        .component--other-industries .slides .content .images {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 8px !important;
+            height: auto !important;
+        }
+        .component--other-industries .slides .content .boxes {
+            height: auto !important; /* override inline 202px */
+            min-height: 150px !important;
+            overflow: visible !important;
+        }
+        .component--other-industries .slides .content .boxes .inner {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+            transform: none !important; /* override JS animations */
+        }
+        .component--other-industries .slides .content .boxes .inner .box {
+            width: 100% !important;
+            padding: 12px 16px !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 12px !important;
+        }
+        
+        /* Fix Tokenomics Flex Wraps */
+        .component--about .center > div[style*="display: flex"] {
+            flex-wrap: wrap !important;
+            width: 100% !important;
+        }
+        .component--about .center > div[style*="display: flex"] > div {
+            min-width: 80px !important;
+            flex: 1 1 30% !important;
+            margin-bottom: 10px !important;
+        }
+        
+        /* Fix Hero title size */
         .component--hero .title {
             font-size: clamp(2rem, 8vw, 3.2rem) !important;
         }
-        /* Intro grid – stack properly */
+        
+        /* Fix Intro stack */
         .component--intro .rows {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
             gap: 4px !important;
         }
-        .component--intro .row.--center {
-            grid-template-columns: 1fr 1fr !important;
-        }
-        .component--intro .row.--center .video:last-child {
-            grid-column: 1 / -1 !important;
-            aspect-ratio: 16 / 8 !important;
-        }
         .component--intro .center .title {
             font-size: clamp(1.5rem, 4vw, 2.2rem) !important;
         }
-        /* Tokenomics cards */
-        .tokenomics-cards {
-            flex-wrap: wrap !important;
-            gap: 12px !important;
+        
+        /* Fix Combo section */
+        .component--combo .columns {
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
         }
-        .tokenomics-cards > div {
-            min-width: 100px !important;
-            flex: 1 1 30% !important;
-        }
-        .tax-chain-box {
-            flex-wrap: wrap !important;
-            gap: 12px !important;
-        }
-        .tax-chain-box > div {
-            padding-right: 0 !important;
-            border-right: none !important;
-            width: 100% !important;
-            text-align: center !important;
-        }
-        /* Roadmap boxes */
-        .component--periflex .end .boxes {
+        
+        /* Fix FAQ */
+        .component--worldwide .boxes {
             grid-template-columns: 1fr !important;
             gap: 12px !important;
         }
-        /* How-to-buy */
-        .component--other-industries .slides {
-            grid-template-columns: 1fr !important;
-            gap: 30px !important;
-        }
-        .component--other-industries .slides .content .images {
-            grid-template-columns: 1fr 1fr !important;
-            gap: 6px !important;
-        }
-        .component--other-industries .slides .content .boxes .box {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 8px !important;
-            padding: 14px !important;
-        }
-        .contract-wrapper {
-            flex-wrap: wrap !important;
-        }
-        .contract-wrapper input {
-            font-size: 0.75rem !important;
-            min-width: 80px !important;
-        }
-        /* Social links truck */
+        
+        /* Fix Social Truck section */
         .component--truck .navigation {
             max-height: 70vh !important;
             overflow-y: auto !important;
@@ -1186,61 +1225,8 @@ var wpcf7 = {
             font-size: 0.9rem !important;
             padding: 6px 0 !important;
         }
-        /* Combo section */
-        .component--combo .columns {
-            grid-template-columns: 1fr !important;
-            gap: 24px !important;
-        }
-        .component--combo .columns .columns__item .box--white {
-            padding: 24px 16px !important;
-            min-height: 200px !important;
-        }
-        .component--combo .columns .columns__item .box--white .bottom .title {
-            font-size: 1.8rem !important;
-        }
-        .component--combo .columns .columns__item .box--white .bottom .button {
-            width: 100% !important;
-            text-align: center !important;
-        }
-        /* FAQ */
-        .component--worldwide .boxes {
-            grid-template-columns: 1fr !important;
-            gap: 12px !important;
-        }
-        /* Animation section */
-        .component--animation .sticky .content h2 {
-            font-size: clamp(2rem, 7vw, 3rem) !important;
-        }
-        .component--animation .sticky .content .actions {
-            flex-direction: column !important;
-            align-items: center !important;
-        }
-        .component--animation .sticky .content .actions .button {
-            width: 100% !important;
-            text-align: center !important;
-            padding: 14px 20px !important;
-        }
-        /* Footer */
-        .component--footer .columns {
-            flex-direction: column !important;
-            align-items: center !important;
-            text-align: center !important;
-            gap: 16px !important;
-        }
-        .component--footer .columns .columns__item .flex {
-            justify-content: center !important;
-            flex-direction: column !important;
-            gap: 8px !important;
-        }
-        /* General font & spacing adjustments */
-        .title--large,
-        .title.--large {
-            font-size: clamp(1.8rem, 5vw, 2.8rem) !important;
-        }
-        .title--xlarge,
-        .title.--xlarge {
-            font-size: clamp(2rem, 6vw, 3.2rem) !important;
-        }
+        
+        /* General fixes */
         .component {
             padding: 40px 0 !important;
         }
@@ -1250,63 +1236,10 @@ var wpcf7 = {
         .box {
             padding: 16px !important;
         }
-        /* Fix any absolute positioning that breaks */
-        .floating.--center {
-            transform: translate(-50%, -50%) !important;
+        img, video {
+            max-width: 100% !important;
+            height: auto !important;
         }
-        .floating.--bottom,
-        .floating.--top,
-        .floating.--topleft,
-        .floating.--topright,
-        .floating.--bottomleft,
-        .floating.--bottomright {
-            position: relative !important;
-            left: auto !important;
-            right: auto !important;
-            top: auto !important;
-            bottom: auto !important;
-            transform: none !important;
-            text-align: center !important;
-            margin: 10px auto !important;
-        }
-    }
-
-    /* Extra small devices */
-    @media (max-width: 480px) {
-        .component--hero .title {
-            font-size: clamp(1.8rem, 7vw, 2.6rem) !important;
-        }
-        .tokenomics-cards > div {
-            flex: 1 1 45% !important;
-        }
-        .component--other-industries .slides .content .images {
-            grid-template-columns: 1fr 1fr !important;
-            gap: 4px !important;
-        }
-        .component--other-industries .slides .content .boxes .box {
-            padding: 10px 12px !important;
-            font-size: 0.85rem !important;
-        }
-        .component--footer .columns .columns__item .flex {
-            flex-direction: column !important;
-            gap: 6px !important;
-        }
-    }
-
-    /* Force all images and videos to be responsive */
-    img, video {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-
-    /* Ensure the intro videos don't overflow */
-    .component--intro .video {
-        overflow: hidden !important;
-    }
-    .component--intro .video video {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important;
     }
 </style>
 
