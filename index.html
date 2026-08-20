@@ -1096,9 +1096,24 @@ var wpcf7 = {
 <script id="contact-form-7-js" src="./Relats _ Top tier solutions_files/index(1).js.download"></script>
 <script id="googlesitekit-events-provider-contact-form-7-js" src="./Relats _ Top tier solutions_files/googlesitekit-events-provider-contact-form-7-0310812e6aa65ef3c958.js.download" defer=""></script>
 
-<!-- ADDED: small fallback to make intro grid stack on mobile -->
+<!-- ============================================================== -->
+<!--  EXTREME MOBILE RESPONSIVENESS – FORCES ALL SECTIONS VISIBLE   -->
+<!-- ============================================================== -->
 <style>
+    /* ----- FORCE ALL .desktop CONTAINERS TO SHOW ON MOBILE ----- */
     @media (max-width: 1100px) {
+        .desktop {
+            display: block !important;
+        }
+        /* Remove any inline styles that might hide content */
+        [style*="display: none"] {
+            display: block !important;
+        }
+        /* Hero title size */
+        .component--hero .title {
+            font-size: clamp(2rem, 8vw, 3.2rem) !important;
+        }
+        /* Intro grid – stack properly */
         .component--intro .rows {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
@@ -1109,21 +1124,189 @@ var wpcf7 = {
         }
         .component--intro .row.--center .video:last-child {
             grid-column: 1 / -1 !important;
+            aspect-ratio: 16 / 8 !important;
         }
         .component--intro .center .title {
             font-size: clamp(1.5rem, 4vw, 2.2rem) !important;
         }
-        /* Ensure all .desktop containers are visible (they were hidden by theme) */
-        .desktop {
-            display: block !important;
-        }
-        /* Fix tokenomics cards on mobile */
+        /* Tokenomics cards */
         .tokenomics-cards {
             flex-wrap: wrap !important;
+            gap: 12px !important;
+        }
+        .tokenomics-cards > div {
+            min-width: 100px !important;
+            flex: 1 1 30% !important;
         }
         .tax-chain-box {
             flex-wrap: wrap !important;
+            gap: 12px !important;
         }
+        .tax-chain-box > div {
+            padding-right: 0 !important;
+            border-right: none !important;
+            width: 100% !important;
+            text-align: center !important;
+        }
+        /* Roadmap boxes */
+        .component--periflex .end .boxes {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+        }
+        /* How-to-buy */
+        .component--other-industries .slides {
+            grid-template-columns: 1fr !important;
+            gap: 30px !important;
+        }
+        .component--other-industries .slides .content .images {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 6px !important;
+        }
+        .component--other-industries .slides .content .boxes .box {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+            padding: 14px !important;
+        }
+        .contract-wrapper {
+            flex-wrap: wrap !important;
+        }
+        .contract-wrapper input {
+            font-size: 0.75rem !important;
+            min-width: 80px !important;
+        }
+        /* Social links truck */
+        .component--truck .navigation {
+            max-height: 70vh !important;
+            overflow-y: auto !important;
+            padding-right: 10px !important;
+        }
+        .component--truck .navigation a,
+        .component--truck .navigation .title {
+            font-size: 0.9rem !important;
+            padding: 6px 0 !important;
+        }
+        /* Combo section */
+        .component--combo .columns {
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
+        }
+        .component--combo .columns .columns__item .box--white {
+            padding: 24px 16px !important;
+            min-height: 200px !important;
+        }
+        .component--combo .columns .columns__item .box--white .bottom .title {
+            font-size: 1.8rem !important;
+        }
+        .component--combo .columns .columns__item .box--white .bottom .button {
+            width: 100% !important;
+            text-align: center !important;
+        }
+        /* FAQ */
+        .component--worldwide .boxes {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+        }
+        /* Animation section */
+        .component--animation .sticky .content h2 {
+            font-size: clamp(2rem, 7vw, 3rem) !important;
+        }
+        .component--animation .sticky .content .actions {
+            flex-direction: column !important;
+            align-items: center !important;
+        }
+        .component--animation .sticky .content .actions .button {
+            width: 100% !important;
+            text-align: center !important;
+            padding: 14px 20px !important;
+        }
+        /* Footer */
+        .component--footer .columns {
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+            gap: 16px !important;
+        }
+        .component--footer .columns .columns__item .flex {
+            justify-content: center !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+        }
+        /* General font & spacing adjustments */
+        .title--large,
+        .title.--large {
+            font-size: clamp(1.8rem, 5vw, 2.8rem) !important;
+        }
+        .title--xlarge,
+        .title.--xlarge {
+            font-size: clamp(2rem, 6vw, 3.2rem) !important;
+        }
+        .component {
+            padding: 40px 0 !important;
+        }
+        .container {
+            padding: 0 15px !important;
+        }
+        .box {
+            padding: 16px !important;
+        }
+        /* Fix any absolute positioning that breaks */
+        .floating.--center {
+            transform: translate(-50%, -50%) !important;
+        }
+        .floating.--bottom,
+        .floating.--top,
+        .floating.--topleft,
+        .floating.--topright,
+        .floating.--bottomleft,
+        .floating.--bottomright {
+            position: relative !important;
+            left: auto !important;
+            right: auto !important;
+            top: auto !important;
+            bottom: auto !important;
+            transform: none !important;
+            text-align: center !important;
+            margin: 10px auto !important;
+        }
+    }
+
+    /* Extra small devices */
+    @media (max-width: 480px) {
+        .component--hero .title {
+            font-size: clamp(1.8rem, 7vw, 2.6rem) !important;
+        }
+        .tokenomics-cards > div {
+            flex: 1 1 45% !important;
+        }
+        .component--other-industries .slides .content .images {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 4px !important;
+        }
+        .component--other-industries .slides .content .boxes .box {
+            padding: 10px 12px !important;
+            font-size: 0.85rem !important;
+        }
+        .component--footer .columns .columns__item .flex {
+            flex-direction: column !important;
+            gap: 6px !important;
+        }
+    }
+
+    /* Force all images and videos to be responsive */
+    img, video {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    /* Ensure the intro videos don't overflow */
+    .component--intro .video {
+        overflow: hidden !important;
+    }
+    .component--intro .video video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
     }
 </style>
 
