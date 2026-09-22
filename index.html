@@ -18,6 +18,16 @@
             html { font-size: 200% !important; }
         }
     </style>
+    <script>
+        // Disable custom smooth scroll (Lenis) on mobile to fix the overly sensitive scroll speed
+        window.addEventListener('DOMContentLoaded', function() {
+            if (window.innerWidth <= 1024 || window.matchMedia("(max-device-width: 1024px)").matches) {
+                document.documentElement.classList.remove('lenis', 'lenis-smooth');
+                // Optional: forcefully stop the library if it exposes a global instance
+                if (window.lenis) window.lenis.destroy();
+            }
+        });
+    </script>
     <meta name="google" content="notranslate">
     <base href=".">
 
